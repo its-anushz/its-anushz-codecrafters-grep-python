@@ -42,45 +42,52 @@ if __name__ == "__main__":
 
 import sys
 
-def match_pattern(input_line, pattern):
-    i = 0  # Pointer for input string
-    j = 0  # Pointer for pattern string
+# Recursive matcher function to handle patterns like \d and \w
+def matcher(input_line, pattern):
+    ptr1 = 0
+    ptr2 = 0
 
-    while i < len(input_line) and j < len(pattern):
-        if pattern[j] == '\\':  # Handle escape characters like \d, \w, etc.
-            if j + 1 < len(pattern):
-                next_char = pattern[j + 1]
-                if next_char == 'd':  # Digit class
-                    if not input_line[i].isdigit():
-                        return False
-                    i += 1
-                    j += 2
-                elif next_char == 'w':  # Word character (alphanumeric)
-                    if not input_line[i].isalnum():
-                        return False
-                    i += 1
-                    j += 2
-                else:
-                    raise RuntimeError(f"Unhandled escape character: {next_char}")
+    if input_line == "" and pattern == "":
+        return True
+    elif input_line == "" and pattern != "":
+        return False
+    elif input_line != "" and pattern == "":
+        return True
+
+    while ptr1 < len(input_line) and ptr2 < len(pattern):
+        if ptr2 + 1 < len(pattern) and pattern[ptr2:ptr2 + 2] == "\\d":
+            if input_line[ptr1].isdigit():
+                return matcher(input_line[ptr1 + 1:], pattern[ptr2 + 2:])
             else:
-                raise RuntimeError(f"Incomplete escape sequence in pattern: {pattern[j:]}")
-        else:  # Handle literal characters and spaces
-            if pattern[j] != input_line[i]:
-                return False
-            i += 1
-            j += 1
+                ptr1 += 1
+        elif ptr2 + 1 < len(pattern) and pattern[ptr2:ptr2 + 2] == "\\w":
+            if input_line[ptr1].isalnum():
+                return matcher(input_line[ptr1 + 1:], pattern[ptr2 + 2:])
+            else:
+                ptr1 += 1
+        elif input_line[ptr1] == pattern[ptr2]:
+            return matcher(input_line[ptr1 + 1:], pattern[ptr2 + 1:])
+        else:
+            ptr1 += 1
 
-    # Check if both input and pattern were fully consumed
-    return i == len(input_line) and j == len(pattern)
+    return False
+
+
+def match_pattern(input_line, pattern):
+    # Use recursive matcher for complex patterns like \d, \w
+    return matcher(input_line, pattern)
 
 
 def main():
-    pattern = sys.argv[2]
-    input_line = sys.stdin.read().strip()
-
-    if sys.argv[1] != "-E":
+    if len(sys.argv) < 3 or sys.argv[1] != "-E":
         print("Expected first argument to be '-E'")
         exit(1)
+
+    pattern = sys.argv[2]
+    input_line = sys.stdin.read().strip()  # strip to remove extra newlines
+
+    # Debug print
+    print(f"Input: {input_line}, Pattern: {pattern}")
 
     if match_pattern(input_line, pattern):
         exit(0)
@@ -91,3 +98,5 @@ def main():
 if __name__ == "__main__":
     main()
 
+
+    
