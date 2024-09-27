@@ -78,6 +78,19 @@ def match_pattern(input_line, pattern):
     if pattern.startswith("^"):
         return input_line.startswith(pattern[1:])
 
+    # Handle negative character groups like [^xyz]
+    if pattern.startswith("[^") and pattern.endswith("]"):
+        # Extract the characters within the brackets
+        char_group = pattern[2:-1]
+        # Return True if the input contains any character that is not in the group
+        return any(c not in char_group for c in input_line)
+
+    # Handle simple character groups like [xyz]
+    if pattern.startswith("[") and pattern.endswith("]"):
+        char_group = pattern[1:-1]
+        # Return True if any character in the input matches any character in the group
+        return any(c in char_group for c in input_line)
+
     # Use recursive matcher for complex patterns like \d, \w
     return matcher(input_line, pattern)
 
@@ -101,3 +114,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
