@@ -2,27 +2,39 @@ import sys
 
 # Recursive matcher function to handle patterns like \d, \w, and +
 def matcher(input_line, input_idx, pattern, pattern_idx):
-    if input_idx >= len(input_line) and pattern_idx >= len(pattern):
+    # If both input and pattern are exhausted, it's a match
+    if input_idx == len(input_line) and pattern_idx == len(pattern):
         return True
-    elif input_idx >= len(input_line) or pattern_idx >= len(pattern):
+    # If the pattern is exhausted but input is not, it's not a match
+    elif pattern_idx == len(pattern):
+        return False
+    # If the input is exhausted but the pattern isn't, handle if the rest is optional
+    elif input_idx == len(input_line):
         return False
 
+    # Handle the '+' quantifier
     if pattern_idx + 1 < len(pattern) and pattern[pattern_idx + 1] == "+":
-        char_to_repeat = pattern[pattern_idx]  # The character that should repeat
-        # Ensure at least one match
-        if input_line[input_idx] != char_to_repeat:
-            return False
+        char_to_repeat = pattern[pattern_idx]  # The character to repeat
+        
+        # If the current character matches the repeating character, consume it
+        if input_line[input_idx] == char_to_repeat:
+            # Keep matching as long as the character matches
+            while input_idx < len(input_line) and input_line[input_idx] == char_to_repeat:
+                # Check if the rest matches after consuming one or more characters
+                if matcher(input_line, input_idx, pattern, pattern_idx + 2):
+                    return True
+                input_idx += 1
+            
+            # If we exit the loop, it means we matched at least one character
+            return True  # Since we matched one or more characters
 
-        # Consume one or more of the same character
-        while input_idx < len(input_line) and input_line[input_idx] == char_to_repeat:
-            input_idx += 1
-        return matcher(input_line, input_idx, pattern, pattern_idx + 2)
+        return False  # No match found
 
-    elif input_line[input_idx] == pattern[pattern_idx]:
+    # Handle character matches
+    if input_line[input_idx] == pattern[pattern_idx]:
         return matcher(input_line, input_idx + 1, pattern, pattern_idx + 1)
 
     return False
-
 
 def match_pattern(input_line, pattern):
     # Handle patterns that start with ^
@@ -36,20 +48,16 @@ def match_pattern(input_line, pattern):
 
     # Handle negative character groups like [^xyz]
     if pattern.startswith("[^") and pattern.endswith("]"):
-        # Extract the characters within the brackets
         char_group = pattern[2:-1]
-        # Return True if the input contains any character that is not in the group
         return any(c not in char_group for c in input_line)
 
     # Handle simple character groups like [xyz]
     if pattern.startswith("[") and pattern.endswith("]"):
         char_group = pattern[1:-1]
-        # Return True if any character in the input matches any character in the group
         return any(c in char_group for c in input_line)
 
     # Use recursive matcher for complex patterns like \d, \w, and +
     return matcher(input_line, 0, pattern, 0)
-
 
 def main():
     if len(sys.argv) < 3 or sys.argv[1] != "-E":
@@ -63,7 +71,6 @@ def main():
         exit(0)
     else:
         exit(1)
-
 
 if __name__ == "__main__":
     main()
