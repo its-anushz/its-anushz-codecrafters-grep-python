@@ -43,32 +43,30 @@ if __name__ == "__main__":
 import sys
 
 # Recursive matcher function to handle patterns like \d and \w
-def matcher(input_line, pattern):
-    ptr1 = 0
-    ptr2 = 0
-
-    if input_line == "" and pattern == "":
+def matcher(input_line,input_idx, pattern, pattern_idx):
+    if input_idx == len(input_line) and pattern_idx == len(pattern):
         return True
-    elif input_line == "" and pattern != "":
+    elif input_idx == len(input_line):
         return False
-    elif input_line != "" and pattern == "":
-        return True
+     # Handle special cases for \d (digit)
+    if pattern[pattern_idx : pattern_idx + 2] == "\\d" and input_line[input_idx].isdigit():
+        return matcher(input_line, input_idx + 1, pattern, pattern_idx + 2)
 
-    while ptr1 < len(input_line) and ptr2 < len(pattern):
-        if ptr2 + 1 < len(pattern) and pattern[ptr2:ptr2 + 2] == "\\d":
-            if input_line[ptr1].isdigit():
-                return matcher(input_line[ptr1 + 1:], pattern[ptr2 + 2:])
-            else:
-                ptr1 += 1
-        elif ptr2 + 1 < len(pattern) and pattern[ptr2:ptr2 + 2] == "\\w":
-            if input_line[ptr1].isalnum():
-                return matcher(input_line[ptr1 + 1:], pattern[ptr2 + 2:])
-            else:
-                ptr1 += 1
-        elif input_line[ptr1] == pattern[ptr2]:
-            return matcher(input_line[ptr1 + 1:], pattern[ptr2 + 1:])
+    # Handle special cases for \w (alphanumeric)
+    elif pattern[pattern_idx : pattern_idx + 2] == "\\w" and input_line[input_idx].isalnum():
+        return matcher(input_line, input_idx + 1, pattern, pattern_idx + 2)
+
+    # Handle the "+" quantifier (one or more)
+    elif pattern_idx + 1 < len(pattern) and pattern[pattern_idx + 1] == "+":
+        if input_line[input_idx] == pattern[pattern_idx]:
+            # Match one or more occurrences: Try matching more occurrences or move to the next pattern character
+            return matcher(input_line, input_idx + 1, pattern, pattern_idx) or matcher(input_line, input_idx + 1, pattern, pattern_idx + 2)
         else:
-            ptr1 += 1
+            return False
+
+    # Handle character matches
+    elif input_line[input_idx] == pattern[pattern_idx]:
+        return matcher(input_line, input_idx + 1, pattern, pattern_idx + 1)
 
     return False
 
@@ -97,7 +95,7 @@ def match_pattern(input_line, pattern):
         return any(c in char_group for c in input_line)
 
     # Use recursive matcher for complex patterns like \d, \w
-    return matcher(input_line, pattern)
+    return matcher(input_line, 0, pattern, 0)
 
 
 def main():
