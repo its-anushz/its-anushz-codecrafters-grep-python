@@ -22,13 +22,17 @@ def matcher(input_line, input_idx, pattern, pattern_idx):
         if input_line[input_idx].isalnum():
             return matcher(input_line, input_idx + 1, pattern, pattern_idx + 2)
 
-    # Handle the "+" quantifier (one or more)
+    # Handle the "+" quantifier (one or more occurrences)
     elif pattern_idx + 1 < len(pattern) and pattern[pattern_idx + 1] == "+":
-        # Match one or more occurrences: Match as many as possible
+        # Match one or more occurrences of the current character
         if input_line[input_idx] == pattern[pattern_idx]:
-            return matcher(input_line, input_idx + 1, pattern, pattern_idx) or matcher(input_line, input_idx, pattern, pattern_idx + 2)
-        else:
+            # Match as many occurrences as possible and then proceed
+            while input_idx < len(input_line) and input_line[input_idx] == pattern[pattern_idx]:
+                input_idx += 1
+            # Move past the '+' in the pattern and continue matching
             return matcher(input_line, input_idx, pattern, pattern_idx + 2)
+        else:
+            return False
 
     # Handle character matches
     elif input_line[input_idx] == pattern[pattern_idx]:
