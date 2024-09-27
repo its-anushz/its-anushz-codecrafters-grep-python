@@ -24,15 +24,18 @@ def matcher(input_line, input_idx, pattern, pattern_idx):
 
     # Handle the "+" quantifier (one or more)
     elif pattern_idx + 1 < len(pattern) and pattern[pattern_idx + 1] == "+":
+        # Match one or more occurrences: Match as many as possible
         if input_line[input_idx] == pattern[pattern_idx]:
-            # Match one or more occurrences: Try matching more occurrences or move to the next pattern character
-            return matcher(input_line, input_idx + 1, pattern, pattern_idx) or matcher(input_line, input_idx + 1, pattern, pattern_idx + 2)
+            return matcher(input_line, input_idx + 1, pattern, pattern_idx) or matcher(input_line, input_idx, pattern, pattern_idx + 2)
+        else:
+            return matcher(input_line, input_idx, pattern, pattern_idx + 2)
 
     # Handle character matches
     elif input_line[input_idx] == pattern[pattern_idx]:
         return matcher(input_line, input_idx + 1, pattern, pattern_idx + 1)
 
     return False
+
 
 def match_pattern(input_line, pattern):
     # Handle patterns that start with ^
@@ -66,7 +69,7 @@ def main():
     input_line = sys.stdin.read().strip()  # Strip to remove extra newlines
 
     # Uncomment this for debugging purposes
-    # print(f"Input: {input_line}, Pattern: {pattern}")
+    # print(f"Input: '{input_line}', Pattern: '{pattern}'")
 
     if match_pattern(input_line, pattern):
         exit(0)
@@ -75,5 +78,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
