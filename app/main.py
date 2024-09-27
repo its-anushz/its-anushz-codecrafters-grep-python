@@ -2,35 +2,24 @@ import sys
 
 # Recursive matcher function to handle patterns like \d, \w, and +
 def matcher(input_line, input_idx, pattern, pattern_idx):
-    # Check if both input and pattern are fully matched
     if input_idx == len(input_line) and pattern_idx == len(pattern):
         return True
-    # If input is finished but pattern is not, return False
     elif input_idx == len(input_line):
-        return False
-    # If pattern is finished but input is not, return False
-    elif pattern_idx == len(pattern):
         return False
 
     # Handle special cases for \d (digit)
-    if pattern_idx + 1 < len(pattern) and pattern[pattern_idx : pattern_idx + 2] == "\\d":
-        if input_line[input_idx].isdigit():
-            return matcher(input_line, input_idx + 1, pattern, pattern_idx + 2)
+    if pattern[pattern_idx : pattern_idx + 2] == "\\d" and input_line[input_idx].isdigit():
+        return matcher(input_line, input_idx + 1, pattern, pattern_idx + 2)
 
     # Handle special cases for \w (alphanumeric)
-    elif pattern_idx + 1 < len(pattern) and pattern[pattern_idx : pattern_idx + 2] == "\\w":
-        if input_line[input_idx].isalnum():
-            return matcher(input_line, input_idx + 1, pattern, pattern_idx + 2)
+    elif pattern[pattern_idx : pattern_idx + 2] == "\\w" and input_line[input_idx].isalnum():
+        return matcher(input_line, input_idx + 1, pattern, pattern_idx + 2)
 
-    # Handle the "+" quantifier (one or more occurrences)
+    # Handle the "+" quantifier (one or more)
     elif pattern_idx + 1 < len(pattern) and pattern[pattern_idx + 1] == "+":
-        # Match one or more occurrences of the current character
         if input_line[input_idx] == pattern[pattern_idx]:
-            # Match as many occurrences as possible and then proceed
-            while input_idx < len(input_line) and input_line[input_idx] == pattern[pattern_idx]:
-                input_idx += 1
-            # Move past the '+' in the pattern and continue matching
-            return matcher(input_line, input_idx, pattern, pattern_idx + 2)
+            # Match one or more occurrences: Try matching more occurrences or move to the next pattern character
+            return matcher(input_line, input_idx + 1, pattern, pattern_idx) or matcher(input_line, input_idx + 1, pattern, pattern_idx + 2)
         else:
             return False
 
@@ -39,8 +28,7 @@ def matcher(input_line, input_idx, pattern, pattern_idx):
         return matcher(input_line, input_idx + 1, pattern, pattern_idx + 1)
 
     return False
-
-
+    
 def match_pattern(input_line, pattern):
     # Handle patterns that start with ^
     if pattern.startswith("^"):
@@ -73,7 +61,7 @@ def main():
     input_line = sys.stdin.read().strip()  # Strip to remove extra newlines
 
     # Uncomment this for debugging purposes
-    # print(f"Input: '{input_line}', Pattern: '{pattern}'")
+    # print(f"Input: {input_line}, Pattern: {pattern}")
 
     if match_pattern(input_line, pattern):
         exit(0)
