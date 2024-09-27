@@ -78,6 +78,11 @@ def match_pattern(input_line, pattern):
     if pattern.startswith("^"):
         return input_line.startswith(pattern[1:])
 
+     #Handle patterns that end with $ (end of string)
+     elif pattern.endswith("$"):
+        l = len(pattern[:-1]) #length of the pattern without "$"
+        return input_line[-l:] == pattern[:-1]   
+
     # Handle negative character groups like [^xyz]
     if pattern.startswith("[^") and pattern.endswith("]"):
         # Extract the characters within the brackets
