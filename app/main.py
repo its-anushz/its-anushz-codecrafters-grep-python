@@ -1,85 +1,83 @@
 import sys
-
-def matcher(input_line, input_idx, pattern, pattern_idx):
-    # Base case: If both input and pattern are exhausted, return True
-    if input_idx == len(input_line) and pattern_idx == len(pattern):
+# import pyparsing - available if you need it!
+# import lark - available if you need it!
+def matcher(input_line, pattern):
+    ptr1 = 0
+    ptr2 = 0
+    if input_line == "" and pattern == "":
         return True
-    # If the pattern is exhausted but input is not, return False
-    if pattern_idx == len(pattern):
+    elif input_line == "":
         return False
-    # If the input is exhausted but the pattern isn't, return False
-    if input_idx == len(input_line):
+    elif pattern == "":
+        return True
+    while ptr1 < len(input_line):
+        if ptr2 + 1 < len(pattern) and pattern[ptr2 : ptr2 + 2] == "\\d":
+            if input_line[ptr1].isdigit():
+                return matcher(input_line[ptr1 + 1 :], pattern[ptr2 + 2 :])
+            else:
+                ptr1 = ptr1 + 1
+        elif ptr2 + 1 < len(pattern) and pattern[ptr2 : ptr2 + 2] == "\\w":
+            if input_line[ptr1].isalnum():
+                return matcher(input_line[ptr1 + 1 :], pattern[ptr2 + 2 :])
+            else:
+                ptr1 = ptr1 + 1
+        elif input_line[ptr1] == pattern[ptr2]:
+            print("here")
+            if ptr2 + 1 < len(pattern) and pattern[ptr2 + 1] == "+":
+                while (
+                    ptr1 + 1 < len(input_line)
+                    and input_line[ptr1 + 1] == input_line[ptr1]
+                ):
+                    ptr1 = ptr1 + 1
+                ptr2 = ptr2 + 1
+            return matcher(input_line[ptr1 + 1 :], pattern[ptr2 + 1 :])
+        else:
+            ptr1 = ptr1 + 1
+    return False
+def match_pattern(input_line, pattern):
+    if len(pattern) == 1:
+        return pattern in input_line
+    elif pattern == "\\d":
+        for i in range(10):
+            if input_line.find(str(i)) != -1:
+                return True
+    elif pattern == "\\w":
+        return input_line.isalnum()
+    elif pattern[0:2] == "[^":
+        pat = pattern[2:-1]
+        for ch in pat:
+            if input_line.find(ch) != -1:
+                return False
+        return True
+    elif pattern[0] == "[" and pattern[-1] == "]":
+        pat = pattern[1:-1]
+        for ch in pat:
+            if input_line.find(ch) != -1:
+                return True
         return False
-
-    # Handle the '+' quantifier
-    if pattern_idx + 1 < len(pattern) and pattern[pattern_idx + 1] == '+':
-        char_to_repeat = pattern[pattern_idx]
-        # Match at least one occurrence
-        if input_line[input_idx] == char_to_repeat:
-            # Move to the next character in the input
-            input_idx += 1
-            # Try to match more characters with the same char
-            while input_idx < len(input_line) and input_line[input_idx] == char_to_repeat:
-                if matcher(input_line, input_idx, pattern, pattern_idx + 2):
-                    return True
-                input_idx += 1
-            # After the while loop, check if the first character was matched
+    elif pattern[0] == "^":
+        if input_line.startswith(pattern[1:]):
             return True
         return False
-
-    # Handle \d (digit) and \w (word character)
-    if pattern[pattern_idx] == "\\d":
-        if input_line[input_idx].isdigit():
-            return matcher(input_line, input_idx + 1, pattern, pattern_idx + 2)
-        else:
-            return False
-    elif pattern[pattern_idx] == "\\w":
-        if input_line[input_idx].isalnum():
-            return matcher(input_line, input_idx + 1, pattern, pattern_idx + 2)
-        else:
-            return False
-
-    # Handle character matches
-    if input_line[input_idx] == pattern[pattern_idx]:
-        return matcher(input_line, input_idx + 1, pattern, pattern_idx + 1)
-
-    return False
-
-def match_pattern(input_line, pattern):
-    # Handle patterns that start with ^
-    if pattern.startswith("^"):
-        return input_line.startswith(pattern[1:])
-
-    # Handle patterns that end with $ (end of string)
-    if pattern.endswith("$"):
-        l = len(pattern[:-1])  # length of the pattern without "$"
-        return input_line[-l:] == pattern[:-1]
-
-    # Handle negative character groups like [^xyz]
-    if pattern.startswith("[^") and pattern.endswith("]"):
-        char_group = pattern[2:-1]
-        return any(c not in char_group for c in input_line)
-
-    # Handle simple character groups like [xyz]
-    if pattern.startswith("[") and pattern.endswith("]"):
-        char_group = pattern[1:-1]
-        return any(c in char_group for c in input_line)
-
-    # Use recursive matcher for complex patterns like \d, \w, and +
-    return matcher(input_line, 0, pattern, 0)
-
+    elif pattern[-1] == "$":
+        l = len(pattern[:-1])
+        if input_line[-l:] == pattern[:-1]:
+            return True
+        return False
+    else:
+        return matcher(input_line, pattern)
 def main():
-    if len(sys.argv) < 3 or sys.argv[1] != "-E":
+    pattern = sys.argv[2]
+    input_line = sys.stdin.read()
+    if sys.argv[1] != "-E":
         print("Expected first argument to be '-E'")
         exit(1)
-
-    pattern = sys.argv[2]
-    input_line = sys.stdin.read().strip()  # strip to remove extra newlines
-
+    # You can use print statements as follows for debugging, they'll be visible when running tests.
+    print("Logs from your program will appear here!")
+    # Uncomment this block to pass the first stage
     if match_pattern(input_line, pattern):
         exit(0)
     else:
         exit(1)
-
 if __name__ == "__main__":
     main()
