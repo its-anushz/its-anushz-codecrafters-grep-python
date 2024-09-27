@@ -1,6 +1,6 @@
 import sys
 
-# Recursive matcher function to handle patterns like \d, \w, and +
+# Recursive matcher function to handle patterns like \d, \w, +, etc.
 def matcher(input_line, input_idx, pattern, pattern_idx):
     # If both input and pattern are exhausted, it's a match
     if input_idx == len(input_line) and pattern_idx == len(pattern):
@@ -8,7 +8,7 @@ def matcher(input_line, input_idx, pattern, pattern_idx):
     # If the pattern is exhausted but input is not, it's not a match
     elif pattern_idx == len(pattern):
         return False
-    # If the input is exhausted but the pattern isn't, handle if the rest is optional
+    # If the input is exhausted but the pattern isn't, it's not a match
     elif input_idx == len(input_line):
         return False
 
@@ -29,6 +29,18 @@ def matcher(input_line, input_idx, pattern, pattern_idx):
             return True  # Since we matched one or more characters
 
         return False  # No match found
+
+    # Handle \d (digit) and \w (word character)
+    if pattern[pattern_idx] == "\\d":
+        if input_line[input_idx].isdigit():
+            return matcher(input_line, input_idx + 1, pattern, pattern_idx + 2)
+        else:
+            return False
+    elif pattern[pattern_idx] == "\\w":
+        if input_line[input_idx].isalnum():
+            return matcher(input_line, input_idx + 1, pattern, pattern_idx + 2)
+        else:
+            return False
 
     # Handle character matches
     if input_line[input_idx] == pattern[pattern_idx]:
