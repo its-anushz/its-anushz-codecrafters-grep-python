@@ -1,34 +1,31 @@
 import sys
 
-# Recursive matcher function to handle patterns like \d, \w, +, etc.
 def matcher(input_line, input_idx, pattern, pattern_idx):
-    # If both input and pattern are exhausted, it's a match
+    # Base case: If both input and pattern are exhausted, return True
     if input_idx == len(input_line) and pattern_idx == len(pattern):
         return True
-    # If the pattern is exhausted but input is not, it's not a match
-    elif pattern_idx == len(pattern):
+    # If the pattern is exhausted but input is not, return False
+    if pattern_idx == len(pattern):
         return False
-    # If the input is exhausted but the pattern isn't, it's not a match
-    elif input_idx == len(input_line):
+    # If the input is exhausted but the pattern isn't, return False
+    if input_idx == len(input_line):
         return False
 
     # Handle the '+' quantifier
-    if pattern_idx + 1 < len(pattern) and pattern[pattern_idx + 1] == "+":
-        char_to_repeat = pattern[pattern_idx]  # The character to repeat
-        
-        # If the current character matches the repeating character, consume it
+    if pattern_idx + 1 < len(pattern) and pattern[pattern_idx + 1] == '+':
+        char_to_repeat = pattern[pattern_idx]
+        # Match at least one occurrence
         if input_line[input_idx] == char_to_repeat:
-            # Keep matching as long as the character matches
+            # Move to the next character in the input
+            input_idx += 1
+            # Try to match more characters with the same char
             while input_idx < len(input_line) and input_line[input_idx] == char_to_repeat:
-                # Check if the rest matches after consuming one or more characters
                 if matcher(input_line, input_idx, pattern, pattern_idx + 2):
                     return True
                 input_idx += 1
-            
-            # If we exit the loop, it means we matched at least one character
-            return True  # Since we matched one or more characters
-
-        return False  # No match found
+            # After the while loop, check if the first character was matched
+            return True
+        return False
 
     # Handle \d (digit) and \w (word character)
     if pattern[pattern_idx] == "\\d":
@@ -54,7 +51,7 @@ def match_pattern(input_line, pattern):
         return input_line.startswith(pattern[1:])
 
     # Handle patterns that end with $ (end of string)
-    elif pattern.endswith("$"):
+    if pattern.endswith("$"):
         l = len(pattern[:-1])  # length of the pattern without "$"
         return input_line[-l:] == pattern[:-1]
 
