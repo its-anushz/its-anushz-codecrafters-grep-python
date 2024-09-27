@@ -79,7 +79,7 @@ def match_pattern(input_line, pattern):
         return input_line.startswith(pattern[1:])
 
      #Handle patterns that end with $ (end of string)
-     elif pattern.endswith("$"):
+    elif pattern.endswith("$"):
         l = len(pattern[:-1]) #length of the pattern without "$"
         return input_line[-l:] == pattern[:-1]   
 
