@@ -59,6 +59,10 @@ def recursive_regex_match(input_line, input_idx, pattern, pattern_idx, back_refe
 
     current_pattern = pattern[pattern_idx]
 
+    # Check if the current pattern is empty to avoid accessing an empty list
+    if not current_pattern:
+        return False
+
     # Handle capturing groups
     if current_pattern[0] == "(":
         for i in range(1, len(current_pattern)):
@@ -101,7 +105,6 @@ def recursive_regex_match(input_line, input_idx, pattern, pattern_idx, back_refe
         return recursive_regex_match(input_line, input_idx, pattern, pattern_idx + 2, back_references)
 
     return False
-
 
 def match_pattern(input_line, pattern):
     special_char_map = {
