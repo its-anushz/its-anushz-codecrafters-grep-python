@@ -12,11 +12,11 @@ def get_literals_from_pattern(pattern):
             i += 2
         elif pattern[i] == "[":
             end_index = pattern.find("]", i)
-          literals.append(pattern[i : end_index + 1])
+            literals.append(pattern[i : end_index + 1])
             i = end_index + 1
         elif pattern[i] == "(":
             end_index = pattern.find(")", i)
-literals.append(pattern[i : end_index + 1])
+            literals.append(pattern[i : end_index + 1])
             i = end_index + 1
         else:
             literals.append(pattern[i])
