@@ -1,168 +1,111 @@
 import sys
-# import pyparsing - available if you need it!
-# import lark - available if you need it!
-
-specialCharactersToValueMap = {}
-back_references = []
 
 def get_literals_from_pattern(pattern):
+    """Extract literals from a regex-like pattern."""
     i = 0
     literals = []
     while i < len(pattern):
         if pattern[i] == "\\":
-            literals.append(pattern[i : i + 2])
+            literals.append(pattern[i:i + 2])
             i += 2
-        elif pattern[i] == "[":
-            end_index = pattern.find("]", i)
-            literals.append(pattern[i : end_index + 1])
-            i = end_index + 1
-        elif pattern[i] == "(":
-            end_index = pattern.find(")", i)
-            literals.append(pattern[i : end_index + 1])
+        elif pattern[i] in "[(":
+            end_index = pattern.find("]", i) if pattern[i] == "[" else pattern.find(")", i)
+            literals.append(pattern[i:end_index + 1])
             i = end_index + 1
         else:
             literals.append(pattern[i])
             i += 1
     return literals
-def get_real_values(literal):
-    # Initialize literal_values to an empty list
-    literal_values = []
-    
-    if literal == ".":
-        literal_values = [chr(i) for i in range(256)]
-    elif len(literal) == 1:
-        literal_values = [literal]
-    elif literal[0] == "[":
-        if literal[1] == "^":
-            sub_literals = get_literals_from_pattern(literal[2:-1])
-            non_literal_values = []
-            for x in sub_literals:
-                non_literal_values += get_real_values(x)
-            non_literal_values = set(non_literal_values)
-            literal_values = [
-                chr(i) for i in range(256) if chr(i) not in non_literal_values
-            ]
-        else:
-            sub_literals = get_literals_from_pattern(literal[1:-1])
-            literal_values = []
-            for x in sub_literals:
-                literal_values += get_real_values(x)
-            literal_values = list(set(literal_values))
-    elif literal[0] == "(":
-        sub_groups = literal[1:-1].split("|")
-        literal_values.append("(")
-        for sub_group in sub_groups:
-            values = [
-                get_real_values(literal)
-                for literal in get_literals_from_pattern(sub_group)
-            ]
-            # Filter out any None values from the values list
-            values = [v for v in values if v is not None]
-            if values:  # Ensure we only append if the values list is not empty
-                literal_values.append(values)
-        print(literal_values)
-    else:
-        literal_values = specialCharactersToValueMap.get(literal, [])
-    
-    # Ensure we never return None values
-    if literal_values is None:
-        literal_values = []
-    
-    return literal_values
 
-def recursive_regex_match(input_line, input_idx, pattern, pattern_idx):
+def get_real_values(literal, special_char_map):
+    """Get actual values represented by the given literal."""
+    if literal == ".":
+        return [chr(i) for i in range(256)]
+    elif len(literal) == 1:
+        return [literal]
+    elif literal.startswith("["):
+        if literal[1] == "^":
+            # Handle negated character classes
+            sub_literals = get_literals_from_pattern(literal[2:-1])
+            return [chr(i) for i in range(256) if chr(i) not in get_real_values(sub_literals)]
+        else:
+            # Handle regular character classes
+            sub_literals = get_literals_from_pattern(literal[1:-1])
+            return list(set(val for sub in sub_literals for val in get_real_values(sub, special_char_map)))
+    elif literal.startswith("("):
+        sub_groups = literal[1:-1].split("|")
+        return [get_real_values(sub_group, special_char_map) for sub_group in sub_groups]
+    else:
+        return special_char_map.get(literal, [])
+
+def recursive_regex_match(input_line, input_idx, pattern, pattern_idx, back_references):
+    """Recursively match input_line against the pattern."""
     if pattern_idx == len(pattern):
         return input_idx
-    if pattern[pattern_idx] == ["$"]:
-        if input_idx == len(input_line) and pattern_idx == len(pattern) - 1:
-            return input_idx
     if input_idx == len(input_line):
         return False
-    if pattern[pattern_idx][0] == "(":
-        for i in range(1, len(pattern[pattern_idx])):
-            subgroup_idx = recursive_regex_match(
-                input_line, input_idx, pattern[pattern_idx][i], 0
-            )
+    
+    current_pattern = pattern[pattern_idx]
+
+    if current_pattern.startswith("("):
+        for i in range(1, len(current_pattern)):
+            subgroup_idx = recursive_regex_match(input_line, input_idx, current_pattern[i], 0, back_references)
             if subgroup_idx:
                 back_references.append(input_line[input_idx:subgroup_idx])
-                to_ret = recursive_regex_match(
-                    input_line, subgroup_idx, pattern, pattern_idx + 1
-                )
+                to_ret = recursive_regex_match(input_line, subgroup_idx, pattern, pattern_idx + 1, back_references)
                 back_references.pop()
                 return to_ret
         return False
-    if (
-        pattern[pattern_idx][0] == "\\"
-        and len(pattern[pattern_idx]) > 1
-        and pattern[pattern_idx][1].isnumeric()
-    ):
-        group_num = int(pattern[pattern_idx][1])
+
+    if current_pattern[0] == "\\" and current_pattern[1].isdigit():
+        group_num = int(current_pattern[1])
         new_pattern = [[x] for x in back_references[group_num - 1]]
-        subgroup_idx = recursive_regex_match(input_line, input_idx, new_pattern, 0)
+        subgroup_idx = recursive_regex_match(input_line, input_idx, new_pattern, 0, back_references)
         if subgroup_idx:
-            return recursive_regex_match(
-                input_line, subgroup_idx, pattern, pattern_idx + 1
-            )
+            return recursive_regex_match(input_line, subgroup_idx, pattern, pattern_idx + 1, back_references)
         return False
-    if input_line[input_idx] in pattern[pattern_idx]:
-        if len(pattern) != pattern_idx + 1 and pattern[pattern_idx + 1] == ["+"] :
-            return recursive_regex_match(
-                input_line, input_idx + 1, pattern, pattern_idx
-            ) or recursive_regex_match(
-                input_line, input_idx + 1, pattern, pattern_idx + 2
-            )
-        if len(pattern) != pattern_idx + 1 and pattern[pattern_idx + 1] == ["?"]:
-            return recursive_regex_match(
-                input_line, input_idx, pattern, pattern_idx + 2
-            ) or recursive_regex_match(
-                input_line, input_idx + 1, pattern, pattern_idx + 2
-            )
-        return recursive_regex_match(
-            input_line, input_idx + 1, pattern, pattern_idx + 1
-        )
-    if len(pattern) != pattern_idx + 1 and pattern[pattern_idx + 1] == ["?"]:
-        return recursive_regex_match(input_line, input_idx, pattern, pattern_idx + 2)
+
+    if input_line[input_idx] in current_pattern:
+        return recursive_regex_match(input_line, input_idx + 1, pattern, pattern_idx + 1, back_references)
+
     return False
 
-def match_pattern(input_line, pattern):
-    pattern_values = [
-        get_real_values(literal) for literal in get_literals_from_pattern(pattern)
-    ]
-    print(f"Pattern Values: {pattern_values}")  # Debugging line
+def match_pattern(input_line, pattern, special_char_map):
+    """Match the input_line against the given pattern."""
+    pattern_values = [get_real_values(literal, special_char_map) for literal in get_literals_from_pattern(pattern)]
+    
     if pattern_values[0] == ["^"]:
-        return recursive_regex_match(input_line, 0, pattern_values, 1)
+        return recursive_regex_match(input_line, 0, pattern_values, 1, [])
     else:
         for i in range(len(input_line)):
-            if recursive_regex_match(input_line, i, pattern_values, 0):
+            if recursive_regex_match(input_line, i, pattern_values, 0, []):
                 return True
         return False
 
 def main():
-    pattern = sys.argv[2]
-    input_line = sys.stdin.read()
-    specialCharactersToValueMap["\\d"] = [str(i) for i in range(10)]
-    specialCharactersToValueMap["\\w"] = [
-        chr(i) for i in range(ord("a"), ord("z") + 1)
-    ]
-    specialCharactersToValueMap["\\w"] += [
-        chr(i) for i in range(ord("A"), ord("Z") + 1)
-    ]
-    specialCharactersToValueMap["\\w"] += [
-        chr(i) for i in range(ord("0"), ord("9") + 1)
-    ]
-    specialCharactersToValueMap["\\w"] += ["_"]
-    specialCharactersToValueMap["\\\\"] = ["\\"]
-    for i in range(10):
-        specialCharactersToValueMap["\\" + str(i)] = "\\" + str(i)
-    if sys.argv[1] != "-E":
-        print("Expected first argument to be '-E'")
+    """Main function to handle command-line input and execute pattern matching."""
+    if len(sys.argv) != 3 or sys.argv[1] != "-E":
+        print("Usage: ./your_program.sh -E '<pattern>'")
         exit(1)
 
-    # You can use print statements as follows for debugging, they'll be visible when running tests.
-    print("Logs from your program will appear here!")
+    pattern = sys.argv[2]
+    input_line = sys.stdin.read()
 
-    # Uncomment this block to pass the first stage
-    if match_pattern(input_line, pattern):
+    # Initialize special characters mapping
+    special_char_map = {
+        "\\d": [str(i) for i in range(10)],
+        "\\w": [chr(i) for i in range(ord("a"), ord("z") + 1)] + 
+                 [chr(i) for i in range(ord("A"), ord("Z") + 1)] + 
+                 [chr(i) for i in range(ord("0"), ord("9") + 1)] + ["_"],
+        "\\\\": ["\\"],
+    }
+    
+    for i in range(10):
+        special_char_map["\\" + str(i)] = "\\" + str(i)
+
+    print("Logs from your program will appear here!")
+    
+    if match_pattern(input_line, pattern, special_char_map):
         exit(0)
     else:
         exit(1)
