@@ -100,32 +100,32 @@ def match_pattern(input_line, pattern):
         return False
 
 def main():
-    """Main function to handle command-line input and execute pattern matching."""
-    if len(sys.argv) != 3 or sys.argv[1] != "-E":
-        print("Usage: ./your_program.sh -E '<pattern>'")
-        exit(1)
-
     pattern = sys.argv[2]
     input_line = sys.stdin.read()
-
-    # Initialize special characters mapping
-    special_char_map = {
-        "\\d": [str(i) for i in range(10)],
-        "\\w": [chr(i) for i in range(ord("a"), ord("z") + 1)] + 
-                 [chr(i) for i in range(ord("A"), ord("Z") + 1)] + 
-                 [chr(i) for i in range(ord("0"), ord("9") + 1)] + ["_"],
-        "\\\\": ["\\"],
-    }
-    
+    specialCharactersToValueMap["\\d"] = [str(i) for i in range(10)]
+    specialCharactersToValueMap["\\w"] = [
+        chr(i) for i in range(ord("a"), ord("z") + 1)
+    ]
+    specialCharactersToValueMap["\\w"] += [
+        chr(i) for i in range(ord("A"), ord("Z") + 1)
+    ]
+    specialCharactersToValueMap["\\w"] += [
+        chr(i) for i in range(ord("0"), ord("9") + 1)
+    ]
+    specialCharactersToValueMap["\\w"] += ["_"]
+    specialCharactersToValueMap["\\\\"] = ["\\"]
     for i in range(10):
-        special_char_map["\\" + str(i)] = "\\" + str(i)
-
-    print("Logs from your program will appear here!")
+        specialCharactersToValueMap["\\" + str(i)] = "\\" + str(i)
     
-    if match_pattern(input_line, pattern, special_char_map):
+    if sys.argv[1] != "-E":
+        print("Expected first argument to be '-E'")
+        exit(1)
+
+    # Logs for debugging
+    print("Logs from your program will appear here!")
+
+    # Call match_pattern with the correct number of arguments (input_line and pattern)
+    if match_pattern(input_line, pattern):
         exit(0)
     else:
         exit(1)
-
-if __name__ == "__main__":
-    main()
