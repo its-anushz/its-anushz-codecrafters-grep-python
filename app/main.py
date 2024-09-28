@@ -63,18 +63,26 @@ def recursive_regex_match(input_line, input_idx, pattern, pattern_idx, back_refe
     if not current_pattern:
         return False
 
-    # Handle capturing groups
+    # Handle capturing groups (save the matched group for backreference use)
     if current_pattern[0] == "(":
+        # Iterate through the sub-patterns inside the group
         for i in range(1, len(current_pattern)):
             subgroup_idx = recursive_regex_match(input_line, input_idx, current_pattern[i], 0, back_references)
             if subgroup_idx:
-                back_references.append(input_line[input_idx:subgroup_idx])  # Capture the match
+                # Capture the matched group for future reference
+                captured_group = input_line[input_idx:subgroup_idx]
+                back_references.append(captured_group)
+                
+                # Move forward with the rest of the pattern after capturing
                 next_match = recursive_regex_match(input_line, subgroup_idx, pattern, pattern_idx + 1, back_references)
-                back_references.pop()  # Remove the captured reference after recursion
+                
+                # Remove the captured group after recursion
+                back_references.pop()
+                
                 return next_match
         return False
 
-    # Handle backreferences
+    # Handle backreferences (e.g., \1, \2)
     if len(current_pattern) > 1 and current_pattern[0] == "\\" and current_pattern[1].isdigit():
         group_num = int(current_pattern[1]) - 1  # Adjust for 0-indexing
         if group_num < len(back_references):
