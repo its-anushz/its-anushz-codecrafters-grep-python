@@ -43,15 +43,18 @@ def get_real_values(literal, special_char_map):
         return special_char_map.get(literal, [])
 
 def recursive_regex_match(input_line, input_idx, pattern, pattern_idx, back_references):
-    """Recursively match input_line against the pattern."""
     if pattern_idx == len(pattern):
         return input_idx
+    if pattern[pattern_idx] == ["$"]:
+        if input_idx == len(input_line) and pattern_idx == len(pattern) - 1:
+            return input_idx
     if input_idx == len(input_line):
         return False
-    
+
     current_pattern = pattern[pattern_idx]
 
-    if current_pattern.startswith("("):
+    if current_pattern[0] == "(":
+        # Handle groups
         for i in range(1, len(current_pattern)):
             subgroup_idx = recursive_regex_match(input_line, input_idx, current_pattern[i], 0, back_references)
             if subgroup_idx:
@@ -60,18 +63,27 @@ def recursive_regex_match(input_line, input_idx, pattern, pattern_idx, back_refe
                 back_references.pop()
                 return to_ret
         return False
-
-    if current_pattern[0] == "\\" and current_pattern[1].isdigit():
+    
+    if len(current_pattern) > 1 and current_pattern[0] == "\\" and current_pattern[1].isdigit():
+        # Handle backreferences
         group_num = int(current_pattern[1])
-        new_pattern = [[x] for x in back_references[group_num - 1]]
-        subgroup_idx = recursive_regex_match(input_line, input_idx, new_pattern, 0, back_references)
-        if subgroup_idx:
-            return recursive_regex_match(input_line, subgroup_idx, pattern, pattern_idx + 1, back_references)
+        if group_num - 1 < len(back_references):
+            new_pattern = [[x] for x in back_references[group_num - 1]]
+            subgroup_idx = recursive_regex_match(input_line, input_idx, new_pattern, 0, back_references)
+            if subgroup_idx:
+                return recursive_regex_match(input_line, subgroup_idx, pattern, pattern_idx + 1, back_references)
         return False
 
     if input_line[input_idx] in current_pattern:
-        return recursive_regex_match(input_line, input_idx + 1, pattern, pattern_idx + 1, back_references)
-
+        if len(pattern) != pattern_idx + 1 and pattern[pattern_idx + 1] == ["+" ]:
+            return recursive_regex_match(input_line, input_idx + 1, pattern, pattern_idx) or recursive_regex_match(input_line, input_idx + 1, pattern, pattern_idx + 2)
+        if len(pattern) != pattern_idx + 1 and pattern[pattern_idx + 1] == ["?"]:
+            return recursive_regex_match(input_line, input_idx, pattern, pattern_idx + 2) or recursive_regex_match(input_line, input_idx + 1, pattern, pattern_idx + 2)
+        return recursive_regex_match(input_line, input_idx + 1, pattern, pattern_idx + 1)
+    
+    if len(pattern) != pattern_idx + 1 and pattern[pattern_idx + 1] == ["?"]:
+        return recursive_regex_match(input_line, input_idx, pattern, pattern_idx + 2)
+    
     return False
 
 def match_pattern(input_line, pattern, special_char_map):
