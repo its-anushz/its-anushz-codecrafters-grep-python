@@ -51,16 +51,21 @@ def get_real_values(literal):
         sub_groups = literal[1:-1].split("|")
         literal_values.append("(")
         for sub_group in sub_groups:
-            literal_values.append(
-                [
-                    get_real_values(literal)
-                    for literal in get_literals_from_pattern(sub_group)
-                ]
-            )
+            values = [
+                get_real_values(literal)
+                for literal in get_literals_from_pattern(sub_group)
+            ]
+            if None not in values:  # Ensure we don't have None
+                literal_values.append(values)
         print(literal_values)
     else:
         literal_values = specialCharactersToValueMap.get(literal, [])
-        return literal_values
+    
+    # Debugging line to ensure no None values in output
+    if None in literal_values:
+        print(f"Warning: None found in literal values for {literal}")
+    
+    return literal_values
 
 def recursive_regex_match(input_line, input_idx, pattern, pattern_idx):
     if pattern_idx == len(pattern):
