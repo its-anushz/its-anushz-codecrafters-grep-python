@@ -27,7 +27,7 @@ def get_real_values(literal, special_char_map):
         if literal[1] == "^":
             # Handle negated character classes
             sub_literals = get_literals_from_pattern(literal[2:-1])
-            return [chr(i) for i in range(256) if chr(i) not in get_real_values(sub_literals)]
+            return [chr(i) for i in range(256) if chr(i) not in get_real_values(sub_literals, special_char_map)]
         else:
             # Handle regular character classes
             sub_literals = get_literals_from_pattern(literal[1:-1])
@@ -104,10 +104,16 @@ def recursive_regex_match(input_line, input_idx, pattern, pattern_idx, back_refe
 
 
 def match_pattern(input_line, pattern):
+    special_char_map = {
+        "\\d": [str(i) for i in range(10)],
+        "\\w": [chr(i) for i in range(ord("a"), ord("z") + 1)] + [chr(i) for i in range(ord("A"), ord("Z") + 1)] + [str(i) for i in range(10)] + ["_"],
+        "\\\\": ["\\"]
+    }
+    
     pattern_values = [
-        get_real_values(literal) for literal in get_literals_from_pattern(pattern)
+        get_real_values(literal, special_char_map) for literal in get_literals_from_pattern(pattern)
     ]
-    print(f"Pattern Values: {pattern_values}")  # Debugging line
+    
     if pattern_values[0] == ["^"]:
         return recursive_regex_match(input_line, 0, pattern_values, 1, [])
     else:
@@ -117,32 +123,24 @@ def match_pattern(input_line, pattern):
         return False
 
 def main():
-    pattern = sys.argv[2]
-    input_line = sys.stdin.read()
-    specialCharactersToValueMap["\\d"] = [str(i) for i in range(10)]
-    specialCharactersToValueMap["\\w"] = [
-        chr(i) for i in range(ord("a"), ord("z") + 1)
-    ]
-    specialCharactersToValueMap["\\w"] += [
-        chr(i) for i in range(ord("A"), ord("Z") + 1)
-    ]
-    specialCharactersToValueMap["\\w"] += [
-        chr(i) for i in range(ord("0"), ord("9") + 1)
-    ]
-    specialCharactersToValueMap["\\w"] += ["_"]
-    specialCharactersToValueMap["\\\\"] = ["\\"]
-    for i in range(10):
-        specialCharactersToValueMap["\\" + str(i)] = "\\" + str(i)
-    
+    if len(sys.argv) < 3:
+        print("Usage: <program> -E <pattern>")
+        exit(1)
+
     if sys.argv[1] != "-E":
         print("Expected first argument to be '-E'")
         exit(1)
 
+    pattern = sys.argv[2]
+    input_line = sys.stdin.read()
+
     # Logs for debugging
     print("Logs from your program will appear here!")
 
-    # Call match_pattern with the correct number of arguments (input_line and pattern)
-    if match_pattern(input_line, pattern):
+    if match_pattern(input_line.strip(), pattern):
         exit(0)
     else:
         exit(1)
+
+if __name__ == "__main__":
+    main()
