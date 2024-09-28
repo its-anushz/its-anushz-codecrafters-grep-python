@@ -24,9 +24,10 @@ def get_literals_from_pattern(pattern):
             literals.append(pattern[i])
             i += 1
     return literals
-
 def get_real_values(literal):
+    # Initialize literal_values to an empty list
     literal_values = []
+    
     if literal == ".":
         literal_values = [chr(i) for i in range(256)]
     elif len(literal) == 1:
@@ -55,15 +56,17 @@ def get_real_values(literal):
                 get_real_values(literal)
                 for literal in get_literals_from_pattern(sub_group)
             ]
-            if None not in values:  # Ensure we don't have None
+            # Filter out any None values from the values list
+            values = [v for v in values if v is not None]
+            if values:  # Ensure we only append if the values list is not empty
                 literal_values.append(values)
         print(literal_values)
     else:
         literal_values = specialCharactersToValueMap.get(literal, [])
     
-    # Debugging line to ensure no None values in output
-    if None in literal_values:
-        print(f"Warning: None found in literal values for {literal}")
+    # Ensure we never return None values
+    if literal_values is None:
+        literal_values = []
     
     return literal_values
 
@@ -125,6 +128,7 @@ def match_pattern(input_line, pattern):
     pattern_values = [
         get_real_values(literal) for literal in get_literals_from_pattern(pattern)
     ]
+    print(f"Pattern Values: {pattern_values}")  # Debugging line
     if pattern_values[0] == ["^"]:
         return recursive_regex_match(input_line, 0, pattern_values, 1)
     else:
