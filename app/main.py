@@ -57,7 +57,7 @@ def get_real_values(literal):
         print(literal_values)
     else:
         literal_values = specialCharactersToValueMap.get(literal, [])
-       return literal_values
+        return literal_values
 def recursive_regex_match(input_line, input_idx, pattern, pattern_idx):
     if pattern_idx == len(pattern):
         return input_idx
