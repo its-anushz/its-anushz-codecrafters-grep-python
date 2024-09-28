@@ -76,27 +76,26 @@ def recursive_regex_match(input_line, input_idx, pattern, pattern_idx, back_refe
 
     if input_line[input_idx] in current_pattern:
         if len(pattern) != pattern_idx + 1 and pattern[pattern_idx + 1] == ["+" ]:
-            return recursive_regex_match(input_line, input_idx + 1, pattern, pattern_idx) or recursive_regex_match(input_line, input_idx + 1, pattern, pattern_idx + 2)
+            return recursive_regex_match(input_line, input_idx + 1, pattern, pattern_idx, back_references) or recursive_regex_match(input_line, input_idx + 1, pattern, pattern_idx + 2, back_references)
         if len(pattern) != pattern_idx + 1 and pattern[pattern_idx + 1] == ["?"]:
-            return recursive_regex_match(input_line, input_idx, pattern, pattern_idx + 2) or recursive_regex_match(input_line, input_idx + 1, pattern, pattern_idx + 2)
-        return recursive_regex_match(input_line, input_idx + 1, pattern, pattern_idx + 1)
+            return recursive_regex_match(input_line, input_idx, pattern, pattern_idx + 2, back_references) or recursive_regex_match(input_line, input_idx + 1, pattern, pattern_idx + 2, back_references)
+        return recursive_regex_match(input_line, input_idx + 1, pattern, pattern_idx + 1, back_references)
     
     if len(pattern) != pattern_idx + 1 and pattern[pattern_idx + 1] == ["?"]:
-        return recursive_regex_match(input_line, input_idx, pattern, pattern_idx + 2)
+        return recursive_regex_match(input_line, input_idx, pattern, pattern_idx + 2, back_references)
     
     return False
 
-def match_pattern(input_line, pattern, special_char_map):
-    """Match the input_line against the given pattern."""
-    pattern_values = [get_real_values(literal, special_char_map) for literal in get_literals_from_pattern(pattern)]
-    # Flatten the pattern values
-    flat_pattern_values = [item for sublist in pattern_values for item in sublist]
-
-    if flat_pattern_values[0] == "^":
-        return recursive_regex_match(input_line, 0, flat_pattern_values, 1, [])
+def match_pattern(input_line, pattern):
+    pattern_values = [
+        get_real_values(literal) for literal in get_literals_from_pattern(pattern)
+    ]
+    print(f"Pattern Values: {pattern_values}")  # Debugging line
+    if pattern_values[0] == ["^"]:
+        return recursive_regex_match(input_line, 0, pattern_values, 1, [])
     else:
         for i in range(len(input_line)):
-            if recursive_regex_match(input_line, i, flat_pattern_values, 0, []):
+            if recursive_regex_match(input_line, i, pattern_values, 0, []):
                 return True
         return False
 
