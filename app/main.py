@@ -33,8 +33,12 @@ def get_real_values(literal, special_char_map):
             sub_literals = get_literals_from_pattern(literal[1:-1])
             return list(set(val for sub in sub_literals for val in get_real_values(sub, special_char_map)))
     elif literal.startswith("("):
+        # Flatten groups
         sub_groups = literal[1:-1].split("|")
-        return [get_real_values(sub_group, special_char_map) for sub_group in sub_groups]
+        values = []
+        for sub_group in sub_groups:
+            values.extend(get_real_values(sub_group, special_char_map))
+        return values  # Flatten the result
     else:
         return special_char_map.get(literal, [])
 
@@ -73,12 +77,14 @@ def recursive_regex_match(input_line, input_idx, pattern, pattern_idx, back_refe
 def match_pattern(input_line, pattern, special_char_map):
     """Match the input_line against the given pattern."""
     pattern_values = [get_real_values(literal, special_char_map) for literal in get_literals_from_pattern(pattern)]
-    
-    if pattern_values[0] == ["^"]:
-        return recursive_regex_match(input_line, 0, pattern_values, 1, [])
+    # Flatten the pattern values
+    flat_pattern_values = [item for sublist in pattern_values for item in sublist]
+
+    if flat_pattern_values[0] == "^":
+        return recursive_regex_match(input_line, 0, flat_pattern_values, 1, [])
     else:
         for i in range(len(input_line)):
-            if recursive_regex_match(input_line, i, pattern_values, 0, []):
+            if recursive_regex_match(input_line, i, flat_pattern_values, 0, []):
                 return True
         return False
 
