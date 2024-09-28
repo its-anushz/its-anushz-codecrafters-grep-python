@@ -25,32 +25,23 @@ def match_pattern(input_line, pattern, captured_group=None):
     if pattern.startswith("(") and ")" in pattern:
         group_content = pattern[1:pattern.index(")")]
         remaining_pattern = pattern[pattern.index(")") + 1:]
+        
+        # Try to capture a group in input_line matching the group content
         for i in range(1, len(input_line) + 1):
-            if match_pattern(input_line[i:], remaining_pattern, input_line[:i]):
+            captured = input_line[:i]
+            if match_pattern(input_line[i:], remaining_pattern, captured):
                 return True
         return False
 
     # Handle start-of-string anchor
     if pattern[0] == "^":
         pattern = pattern[1:]
-        while len(pattern) > 0 and len(input_line) > 0:
-            if pattern[0] == input_line[0]:
-                pattern = pattern[1:]
-                input_line = input_line[1:]
-            else:
-                return False
-        return match_pattern(input_line, pattern)
+        return input_line.startswith(pattern)
 
     # Handle end-of-string anchor
     if pattern[-1] == "$":
         pattern = pattern[:-1]
-        while len(pattern) > 0 and len(input_line) > 0:
-            if pattern[-1] == input_line[-1]:
-                pattern = pattern[:-1]
-                input_line = input_line[:-1]
-            else:
-                return False
-        return match_pattern(input_line, pattern)
+        return input_line.endswith(pattern)
 
     # Handle other special regex elements (e.g., `+`, `.`, character classes)
     if pattern[0] == input_line[0]:
@@ -64,11 +55,6 @@ def match_pattern(input_line, pattern, captured_group=None):
                     input_line, pattern[1:], captured_group
                 )
         return match_pattern(input_line[1:], pattern[1:], captured_group)
-
-    elif pattern[0] != input_line[0] and len(pattern) > 1 and pattern[1] == "?":
-        if pattern[1] == "?":
-            return match_pattern(input_line, pattern[2:], captured_group)
-        return False
 
     elif pattern[0] == ".":
         return match_pattern(input_line[1:], pattern[1:], captured_group)
@@ -86,21 +72,16 @@ def match_pattern(input_line, pattern, captured_group=None):
         else:
             return False
 
-    elif pattern[0] == "[" and pattern[-1] == "]":
-        if pattern[1] == "^":
-            chrs = list(pattern[2:-1])
-            for c in chrs:
-                if c in input_line:
-                    return False
-            return True
-        chrs = list(pattern[1:-1])
-        for c in chrs:
-            if c in input_line:
-                return True
-        return False
+    # Handle character classes like [abc]
+    elif pattern[0] == "[" and "]" in pattern:
+        class_content = pattern[1:pattern.index("]")]
+        remaining_pattern = pattern[pattern.index("]") + 1:]
+        if input_line[0] in class_content:
+            return match_pattern(input_line[1:], remaining_pattern, captured_group)
+        else:
+            return False
 
-    else:
-        return match_pattern(input_line[1:], pattern, captured_group)
+    return False
 
 def main():
     pattern = sys.argv[2]
