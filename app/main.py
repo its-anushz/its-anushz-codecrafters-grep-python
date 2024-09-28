@@ -1,8 +1,10 @@
 import sys
 # import pyparsing - available if you need it!
 # import lark - available if you need it!
+
 specialCharactersToValueMap = {}
 back_references = []
+
 def get_literals_from_pattern(pattern):
     i = 0
     literals = []
@@ -22,6 +24,7 @@ def get_literals_from_pattern(pattern):
             literals.append(pattern[i])
             i += 1
     return literals
+
 def get_real_values(literal):
     literal_values = []
     if literal == ".":
@@ -58,6 +61,7 @@ def get_real_values(literal):
     else:
         literal_values = specialCharactersToValueMap.get(literal, [])
         return literal_values
+
 def recursive_regex_match(input_line, input_idx, pattern, pattern_idx):
     if pattern_idx == len(pattern):
         return input_idx
@@ -93,7 +97,7 @@ def recursive_regex_match(input_line, input_idx, pattern, pattern_idx):
             )
         return False
     if input_line[input_idx] in pattern[pattern_idx]:
-        if len(pattern) != pattern_idx + 1 and pattern[pattern_idx + 1] == ["+"]:
+        if len(pattern) != pattern_idx + 1 and pattern[pattern_idx + 1] == ["+"] :
             return recursive_regex_match(
                 input_line, input_idx + 1, pattern, pattern_idx
             ) or recursive_regex_match(
@@ -111,6 +115,7 @@ def recursive_regex_match(input_line, input_idx, pattern, pattern_idx):
     if len(pattern) != pattern_idx + 1 and pattern[pattern_idx + 1] == ["?"]:
         return recursive_regex_match(input_line, input_idx, pattern, pattern_idx + 2)
     return False
+
 def match_pattern(input_line, pattern):
     pattern_values = [
         get_real_values(literal) for literal in get_literals_from_pattern(pattern)
@@ -122,13 +127,14 @@ def match_pattern(input_line, pattern):
             if recursive_regex_match(input_line, i, pattern_values, 0):
                 return True
         return False
-    # else:
-    #     raise RuntimeError(f"Unhandled pattern: {pattern}")
+
 def main():
     pattern = sys.argv[2]
     input_line = sys.stdin.read()
     specialCharactersToValueMap["\\d"] = [str(i) for i in range(10)]
-    specialCharactersToValueMap["\\w"] = [chr(i) for i in range(ord("a"), ord("z") + 1)]
+    specialCharactersToValueMap["\\w"] = [
+        chr(i) for i in range(ord("a"), ord("z") + 1)
+    ]
     specialCharactersToValueMap["\\w"] += [
         chr(i) for i in range(ord("A"), ord("Z") + 1)
     ]
@@ -142,12 +148,15 @@ def main():
     if sys.argv[1] != "-E":
         print("Expected first argument to be '-E'")
         exit(1)
+
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!")
+
     # Uncomment this block to pass the first stage
     if match_pattern(input_line, pattern):
         exit(0)
     else:
         exit(1)
+
 if __name__ == "__main__":
-    main() 
+    main()
